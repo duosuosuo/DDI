@@ -8,25 +8,38 @@ import time
 import os
 import logging 
 
-def find_element_by_id(browser,objective,time):
-    try:
-        locator = (By.ID,objective)
-        search_text_field_should_present = EC.visibility_of_any_elements_located(locator)
-        WebDriverWait(browser, time).until(EC.presence_of_element_located(locator))
-        return browser.find_element_by_id(objective)
-    except TimeoutException:
-        logMessage = 'Get element' + objective + 'failed.'
-        logger.info(logMessage)
+screenshot_path = 'screenshot'
 
-def find_element_by_xpath(browser, objective, time):
+class TimeoutType():
+    long = 200
+    short = 50
+
+try_count = 6
+def find_element(browser, by, objective, timeout):
+    global try_count
+    starttime = time.time()
     try:
-        locator = (By.XPATH, objective)
-        search_text_field_should_present = EC.visibility_of_any_elements_located(locator)
-        WebDriverWait(browser, time).until(EC.presence_of_element_located(locator))
-        return browser.find_element_by_xpath(objective)
+        locator = (by, objective)
+        WebDriverWait(browser, timeout).until(EC.presence_of_element_located(locator))
+        return browser.find_element(*locator)
     except TimeoutException:
-        logMessage = 'Get element' + objective + 'failed.'
+        lasttime = int(time.time() - starttime)
+        logMessage = "Get element TIMEOUT, cost:{0} expect:{1} element:{2}".format(lasttime, timeout, objective)
         logger.info(logMessage)
+        #exit()
+        try_count -= 1
+        if try_count <= 0: exit()
+        time.sleep(10)
+        return find_element(browser, by, objective, timeout)
+
+
+def find_element_by_id(browser, objective, timeout): return find_element(browser, By.ID, objective, timeout)
+def find_element_by_xpath(browser, objective, timeout): return find_element(browser, By.XPATH, objective, timeout)
+
+
+def screenshot(browser, filename):
+    if not os.path.isdir(screenshot_path): os.mkdir(screenshot_path)
+    browser.get_screenshot_as_file(os.path.join(screenshot_path, filename))
 
 def changeLanguage(browser, language):
     logger.info('***********************************************************************')
@@ -37,7 +50,7 @@ def changeLanguage(browser, language):
     # Change language: Click Humburger button-->Setting-->Language-->Choose DE-->click OK
     try:
         logger.info('Click Humburger button.')
-        find_element_by_xpath(browser, "//*[@id='limejs']/div[3]/div[1]/div/div/div/div[3]/div[2]/div[4]", 200).click()
+        find_element_by_xpath(browser, "//*[@id='limejs']/div[3]/div[1]/div/div/div/div[3]/div[2]/div[4]", TimeoutType.long).click()
 
         logger.info('Click Setting button.')
         find_element_by_xpath(browser, "//*[@id='limejs']/div[7]/div/div/div/div[2]/div/div[2]/div[2]/div[1]", 50).click()
@@ -135,7 +148,7 @@ def CheckLanChangingResult(browser, language):
 
         # Get the screenshort for checking if needed.
         logger.info("Get screenshort for checking if you need.")
-        browser.get_screenshot_as_file(language)
+        screenshot(browser, language+'.png')
 
         # Close buy chips dialog by clicking x button.
         logger.info("Close buy chips dialog.")

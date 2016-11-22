@@ -5,6 +5,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 import time
+import os
 import logging 
 
 def find_element_by_id(browser,objective,time):
@@ -156,7 +157,9 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 #Create handler for writing log to file
-logfile = './logger.txt'
+log_path = 'logs'
+logfile = os.path.join(log_path, 'log.txt')
+if not os.path.isdir(log_path): os.mkdir(log_path)
 fh = logging.FileHandler(logfile,mode = 'w')
 fh.setLevel(logging.INFO)
 
